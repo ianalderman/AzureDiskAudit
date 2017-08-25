@@ -92,22 +92,25 @@ foreach ($vm in $virtualMachines) {
         $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
     }
 
-    $vmDiskTable.Rows.Add($row)
+    $vmDiskTable.Rows.Add($row)    
 
-    $row = $vmDiskTable.NewRow()
-    $row.isOrphan = "false"
-    $row.vmName = $vm.Name
-    $row.vmResourceGroup = $vm.ResourceGroupName
-    $row.vmTags = "{"
+    foreach ($disk in $vm.StorageProfile.DataDisks) {
+        $row = $vmDiskTable.NewRow()
+        $row.isOrphan = "false"
+        $row.dataOrOsDisk = "data"
+        $row.vmName = $vm.Name
+        $row.vmResourceGroup = $vm.ResourceGroupName
+        
+        $row.vmTags = "{"
+        foreach($tag in $vm.Tags) {
+            [string]$key = $tag.Keys[0]
+            [string]$value = $tag.Values[0]
+            $row.vmTags += "`"$key`":`"$value`";"
+        }
+        $row.vmTags += "}"
+        
+        $row.vmLocation = $vm.Location
 
-    foreach($tag in $vm.Tags) {
-        $row.vmTags += "`"[string]$tag.Keys[0]`":`"[string]$tag.values[0]`";"
-    }
-
-    $row.vmTags += "}"
-    $row.vmLocation = $vm.Location
-
-    foreach ($disk in $vm.DataDisks) {
         if ($disk.ManagedDisk) {
         $row.managedOrUnmanaged = "managed"
         $dataDisk = Get-AzureRmDisk | Where {$_.Id -eq $vm.StorageProfile.osdisk.ManagedDisk.Id}
@@ -131,7 +134,7 @@ foreach ($vm in $virtualMachines) {
             }
         }
 
-    $vmDiskTable.Rows.Add($row)
+        $vmDiskTable.Rows.Add($row)
     }
 }
 
@@ -165,7 +168,7 @@ foreach ($storageAccount in $storageAccounts) {
     foreach ($disk in $orphanedUnmanagedDisks) {
         $row = $vmDiskTable.NewRow()
         $row.diskName = $disk.Name
-        $row.storageAccount = $disk.StorageAccountName
+        $row.storageAccount = $disk.Context.StorageAccountName
         $row.managedOrUnmanaged = "unmanaged"
         $row.diskSize = $disk.Length / 1GB
         $row.consumedSize = (Get-BlobBytes($disk)) / 1GB
