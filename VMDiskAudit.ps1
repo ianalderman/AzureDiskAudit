@@ -87,7 +87,8 @@ foreach ($vm in $virtualMachines) {
         $row.storageAccount = $storageAccount.StorageAccountName
         $row.diskType = $storageAccount.Sku.Name
         $arrUri = $uri.split("/")
-        $diskBlob = Get-AzureStorageBlob -Container $arrUri[3] -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf("/vhds/")+6, $uri.Length - ($uri.IndexOf("/vhds/")+6))
+        $container = $arrUri[3]
+        $diskBlob = Get-AzureStorageBlob -Container $container -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf($container) + $container.length + 1, $uri.Length - ($uri.IndexOf($container)+($container.length + 1)))
         $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
     }
 
@@ -124,7 +125,8 @@ foreach ($vm in $virtualMachines) {
                 $row.storageAccount = $storageAccount.StorageAccountName
                 $row.diskType = $storageAccount.Sku.Name
                 $arrUri = $uri.split("/")
-                $diskBlob = Get-AzureStorageBlob -Container $arrUri[3] -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf("/vhds/")+6, $uri.Length - ($uri.IndexOf("/vhds/")+6))
+                $container = $arrUri[3]
+                $diskBlob = Get-AzureStorageBlob -Container $container -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf($container) + $container.length + 1, $uri.Length - ($uri.IndexOf($container)+($container.length + 1)))
                 $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
             }
         }
