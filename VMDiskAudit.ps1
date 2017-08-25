@@ -116,13 +116,16 @@ foreach ($vm in $virtualMachines) {
         } else {
             $row.managedOrUnmanaged = "unmanaged"
             $row.diskSize = $disk.DiskSizeGB
-            $uri = $disk.vhd.uri
-            $storageAccount = Get-AzureRmStorageAccount | Where {$_.StorageAccountName -eq $uri.substring(8,$uri.IndexOf(".")-8)}
-            $row.diskResourceGroup = $storageAccount.ResourceGroupName
-            $row.storageAccount = $storageAccount.StorageAccountName
-            $row.diskType = $storageAccount.Sku.Name
-            $diskBlob = Get-AzureStorageBlob -Container "vhds" -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf("/vhds/")+6, $uri.Length - ($uri.IndexOf("/vhds/")+6))
-            $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
+            if ($uri) {
+                $uri = $disk.vhd.uri
+                $storageAccount = Get-AzureRmStorageAccount | Where {$_.StorageAccountName -eq $uri.substring(8,$uri.IndexOf(".")-8)}
+                $row.diskResourceGroup = $storageAccount.ResourceGroupName
+                $row.storageAccount = $storageAccount.StorageAccountName
+                $row.diskType = $storageAccount.Sku.Name
+                $arrUri = $uri.split("/")
+                $diskBlob = Get-AzureStorageBlob -Container $arrUri[3] -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf("/vhds/")+6, $uri.Length - ($uri.IndexOf("/vhds/")+6))
+                $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
+            }
         }
 
     $vmDiskTable.Rows.Add($row)
