@@ -45,7 +45,7 @@ function Get-BlobBytes
     return $blobSizeInBytes
 }
 
-AddStringColumns ("vmName,vmResourceGroup,vmLocation,vmTags,osType,dataOrOsDisk,diskSize,diskType,managedOrUnmanaged,storageAccount,consumedSize,diskCacheMode,diskCreateOption,diskName,diskResourceGroup,isOrphan")
+AddStringColumns ("vmName,vmResourceGroup,vmLocation,vmTags,osType,dataOrOsDisk,diskSize,diskType,managedOrUnmanaged,storageAccount,container,consumedSize,diskCacheMode,diskCreateOption,diskName,diskResourceGroup,isOrphan")
 
 Write-Host "Auditing Disks attached to VMs"
 $virtualMachines = Get-AzureRmVM
@@ -88,6 +88,7 @@ foreach ($vm in $virtualMachines) {
         $row.diskType = $storageAccount.Sku.Name
         $arrUri = $uri.split("/")
         $container = $arrUri[3]
+        $row.Container = $container
         $diskBlob = Get-AzureStorageBlob -Container $container -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf($container) + $container.length + 1, $uri.Length - ($uri.IndexOf($container)+($container.length + 1)))
         $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
     }
@@ -129,6 +130,7 @@ foreach ($vm in $virtualMachines) {
                 $row.diskType = $storageAccount.Sku.Name
                 $arrUri = $uri.split("/")
                 $container = $arrUri[3]
+                $row.Container = $container
                 $diskBlob = Get-AzureStorageBlob -Container $container -Context $storageAccount.Context -Blob $uri.substring($uri.IndexOf($container) + $container.length + 1, $uri.Length - ($uri.IndexOf($container)+($container.length + 1)))
                 $row.consumedSize = (Get-BlobBytes($diskBlob)) / 1GB
             }
@@ -163,11 +165,12 @@ $storageAccounts = Get-AzureRmStorageAccount
 foreach ($storageAccount in $storageAccounts) {
     
 
-    $orphanedUnmanagedDisks = get-azurestoragecontainer -Context $storageAccount.Context | where {$_.Name -eq "vhds"} | get-azurestorageblob -Blob "*.vhd" | where {$_.SnapshotTime -eq $null -and $_.ICloudBlob.properties.LeaseState -ne "Leased"}
+    $orphanedUnmanagedDisks = get-azurestoragecontainer -Context $storageAccount.Context | get-azurestorageblob -Blob "*.vhd" | where {$_.SnapshotTime -eq $null -and $_.ICloudBlob.properties.LeaseState -ne "Leased"}
     
     foreach ($disk in $orphanedUnmanagedDisks) {
         $row = $vmDiskTable.NewRow()
         $row.diskName = $disk.Name
+        $row.Container = $disk.ICloudBlob.Container.Name
         $row.storageAccount = $disk.Context.StorageAccountName
         $row.managedOrUnmanaged = "unmanaged"
         $row.diskSize = $disk.Length / 1GB
