@@ -1,6 +1,6 @@
 # AzureDiskAudit
 
-***Note for this version of the script you will need to have run login-azurermaccount first.  It also only covers Resource Manager VMs.  Finally the orphan unmanaged disk check assumes disks are in a container called vhd not always valid!***
+***Note for this version of the script you will need to have run login-azurermaccount first.  It also only covers Resource Manager VMs.***
 
 Audits Azure Managed and Unmanaged Disks
 
